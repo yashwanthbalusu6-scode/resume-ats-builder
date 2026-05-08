@@ -13,7 +13,7 @@ build/
 *.db
 *.sqlite
 *.sqlite3
-.streamlit/
+.streamlit/secrets.toml
 resume_tracker.db
 *.pdf
 *.docx

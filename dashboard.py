@@ -207,6 +207,13 @@ with tab1:
                 st.markdown(res.get("optimized", ""))
                 if res.get("provider"):
                     st.caption(f"via {res['provider']}")
+                st.download_button(
+                    "⬇️ Download Optimized Resume",
+                    data=res.get("optimized", ""),
+                    file_name="optimized_resume.txt",
+                    mime="text/plain",
+                    key="dl_optimized",
+                )
 
 
 with tab2:
@@ -242,6 +249,13 @@ with tab2:
             st.markdown(res.get("letter", ""))
             if res.get("provider"):
                 st.caption(f"via {res['provider']}")
+            st.download_button(
+                "⬇️ Download Cover Letter",
+                data=res.get("letter", ""),
+                file_name="cover_letter.txt",
+                mime="text/plain",
+                key="dl_cover_letter",
+            )
 
 
 with tab3:
@@ -280,6 +294,13 @@ with tab3:
             st.markdown(res.get("questions", ""))
             if res.get("provider"):
                 st.caption(f"via {res['provider']}")
+            st.download_button(
+                "⬇️ Download Interview Questions",
+                data=res.get("questions", ""),
+                file_name="interview_questions.txt",
+                mime="text/plain",
+                key="dl_interview",
+            )
 
 
 with tab4:
