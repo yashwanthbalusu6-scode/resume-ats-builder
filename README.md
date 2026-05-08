@@ -38,6 +38,15 @@ Advanced AI-powered resume optimizer for job applications.
 - Skills gap analysis
 - Market insights
 
+## API Keys
+
+The app supports two API providers — set one as an environment variable:
+
+| Variable | Provider | Notes |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic (Claude) | Paid |
+| `YEP_API_KEY` | YepAPI | Free tier available |
+
 ## Installation
 
 ```bash
@@ -47,6 +56,9 @@ pip install -r requirements.txt
 ## Run Locally
 
 ```bash
+# Set your API key first
+export ANTHROPIC_API_KEY=sk-ant-...   # or YEP_API_KEY=...
+
 streamlit run dashboard.py
 ```
 
@@ -54,7 +66,7 @@ streamlit run dashboard.py
 
 1. Push to GitHub
 2. Create HF Space (Docker SDK)
-3. Set ANTHROPIC_API_KEY secret
+3. Set `ANTHROPIC_API_KEY` **or** `YEP_API_KEY` as a Space secret
 4. Done!
 
 ## Tech Stack
