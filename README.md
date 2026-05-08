@@ -1,3 +1,13 @@
+---
+title: ATS Resume Platform
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 8501
+pinned: false
+---
+
 # 🚀 ATS Resume & Job Application Platform
 
 > AI-powered resume optimizer that helps job seekers beat ATS systems and land more interviews
