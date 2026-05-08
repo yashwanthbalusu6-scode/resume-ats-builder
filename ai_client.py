@@ -1,41 +1,24 @@
-"""Unified AI client: routes to YepAPI, Anthropic, or OpenAI based on key prefix."""
-import os
-from typing import Any, Dict, List, Optional
-
-# YepAPI model fallback chain. The first that succeeds is used.
-# Override with YEP_MODELS env var (comma-separated).
-DEFAULT_YEP_MODELS: List[str] = [
-    "anthropic/claude-haiku",
-    "anthropic/claude-haiku-4.5",
-    "anthropic/claude-sonnet-4",
-    "anthropic/claude-sonnet-4.5",
-    "openai/gpt-4o-mini",
-    "google/gemini-2.5-flash-lite",
-    "google/gemini-2.5-flash",
-]
+"""Unified AI client: routes to Gemini (FREE), YepAPI, Anthropic, or OpenAI."""
+from typing import Any, Dict, Optional
 
 
-def _yep_models() -> List[str]:
-    env = os.getenv("YEP_MODELS", "").strip()
-    if env:
-        return [m.strip() for m in env.split(",") if m.strip()]
-    return DEFAULT_YEP_MODELS
-
-
-def call_ai(
-    prompt: str,
-    yep_api_key: Optional[str] = None,
-    anthropic_api_key: Optional[str] = None,
-    max_tokens: int = 2000,
-) -> Dict[str, Any]:
-    """Auto-detect provider based on key format and route accordingly.
-
-    Returns: {"text": str, "provider": str} on success, {"error": str} on failure.
-    """
+def call_ai(prompt, yep_api_key=None, anthropic_api_key=None, max_tokens=2000):
+    """Auto-detect provider based on key prefix."""
     yep_key = (yep_api_key or "").strip() or None
     other_key = (anthropic_api_key or "").strip() or None
-
-    # YepAPI: explicit yep_api_key OR a key passed in anthropic_api_key that starts with yep_
+    
+    # Gemini (FREE - recommended)
+    if other_key and other_key.startswith("AIza"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=other_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            return {"text": response.text, "provider": "🎯 Google Gemini (FREE)"}
+        except Exception as e:
+            return {"error": f"Gemini error: {str(e)}"}
+    
+    # YepAPI
     if yep_key or (other_key and other_key.startswith("yep_")):
         key = yep_key or other_key
         try:
@@ -45,35 +28,16 @@ def call_ai(
                 api_key=key,
                 default_headers={"x-api-key": key},
             )
-            last_err: Optional[str] = None
-            for model_id in _yep_models():
-                try:
-                    response = client.chat.completions.create(
-                        model=model_id,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_tokens=max_tokens,
-                    )
-                    return {
-                        "text": response.choices[0].message.content,
-                        "provider": f"YepAPI ({model_id})",
-                    }
-                except Exception as model_err:
-                    msg = str(model_err)
-                    last_err = f"{model_id}: {msg}"
-                    # Only retry next model when the failure is model-related
-                    is_model_issue = (
-                        "is not available" in msg
-                        or "model" in msg.lower() and "not" in msg.lower()
-                        or "404" in msg
-                        or "400" in msg
-                    )
-                    if not is_model_issue:
-                        return {"error": f"YepAPI error: {msg}"}
-            return {"error": f"YepAPI: no model in fallback chain succeeded. Last: {last_err}"}
+            response = client.chat.completions.create(
+                model="anthropic/claude-haiku-4",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+            )
+            return {"text": response.choices[0].message.content, "provider": "YepAPI (Claude Haiku)"}
         except Exception as e:
             return {"error": f"YepAPI error: {str(e)}"}
-
-    # Anthropic: sk-ant prefix
+    
+    # Anthropic
     if other_key and other_key.startswith("sk-ant"):
         try:
             from anthropic import Anthropic
@@ -83,14 +47,11 @@ def call_ai(
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return {
-                "text": message.content[0].text,
-                "provider": "Anthropic (claude-haiku-4-5)",
-            }
+            return {"text": message.content[0].text, "provider": "Anthropic Claude"}
         except Exception as e:
             return {"error": f"Anthropic error: {str(e)}"}
-
-    # OpenAI: sk- prefix (but not sk-ant, handled above)
+    
+    # OpenAI
     if other_key and other_key.startswith("sk-"):
         try:
             from openai import OpenAI
@@ -100,26 +61,23 @@ def call_ai(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
             )
-            return {
-                "text": response.choices[0].message.content,
-                "provider": "OpenAI (gpt-4o-mini)",
-            }
+            return {"text": response.choices[0].message.content, "provider": "OpenAI GPT-4o-mini"}
         except Exception as e:
             return {"error": f"OpenAI error: {str(e)}"}
+    
+    return {"error": "No valid API key. Get FREE Gemini key at aistudio.google.com/apikey"}
 
-    return {"error": "No valid API key provided"}
 
-
-def has_any_key(yep_key: Optional[str] = None, ant_key: Optional[str] = None) -> bool:
-    """Check if any usable API key is provided."""
+def has_any_key(yep_key=None, ant_key=None):
     return bool((yep_key and yep_key.strip()) or (ant_key and ant_key.strip()))
 
 
-def detect_provider(key: str) -> str:
-    """Return the provider label for a given key string."""
+def detect_provider(key):
     k = (key or "").strip()
     if not k:
         return "None"
+    if k.startswith("AIza"):
+        return "🎯 Google Gemini (FREE)"
     if k.startswith("yep_"):
         return "YepAPI"
     if k.startswith("sk-ant"):

@@ -1,67 +1,47 @@
----
-title: ATS Resume Platform
-emoji: 🚀
-colorFrom: blue
-colorTo: purple
-sdk: docker
-sdk_version: "20.10"
-app_file: dashboard.py
-pinned: false
----
-
 # 🚀 ATS Resume & Job Application Platform
 
-Advanced AI-powered resume optimizer for job applications.
+> AI-powered resume optimizer that helps job seekers beat ATS systems and land more interviews
 
-## Features
+[![Live Demo](https://img.shields.io/badge/Demo-Live-success)](https://yashjanthb-resume-ats-builder.hf.space)
+[![GitHub](https://img.shields.io/badge/GitHub-Code-blue)](https://github.com/yashwanthbalusu6-scode/resume-ats-builder)
 
-📄 **Tab 1: Resume Optimizer**
-- ATS Score (0-100)
-- Keyword matching
-- Smart optimization via Claude
+## ✨ Features
 
-💌 **Tab 2: Cover Letter Generator**
-- AI-generated cover letters
-- Multiple variants
-- Customized for each job
+- 📄 **PDF/DOCX Upload** - Auto-extracts text from resumes
+- 📊 **ATS Score (FREE)** - Get scored 0-100 against any job description
+- 🤖 **AI Resume Optimization** - Rewrite your resume to match jobs perfectly
+- 💌 **Cover Letter Generator** - 2 variants per job, customized
+- 🎤 **Interview Prep** - 10 questions with STAR-format answers
+- 📈 **Application Tracker** - SQLite-backed job application database
+- 🎯 **Skills Analytics** - Track your application performance
 
-🎤 **Tab 3: Interview Prep**
-- 10-15 interview questions
-- STAR framework examples
-- Talking points
+## 🆓 Free AI Options
 
-📊 **Tab 4: Application Tracker**
-- Track all applications
-- Response rate analytics
+This app supports multiple AI providers:
+- 🥇 **Google Gemini** (FREE, recommended) - Get key at aistudio.google.com
+- YepAPI ($5 free credit)
+- Anthropic Claude
+- OpenAI GPT
 
-🎯 **Tab 5: Skills Analytics**
-- Skills gap analysis
-- Market insights
+## 🛠️ Tech Stack
 
-## Installation
+- **Frontend:** Streamlit
+- **AI:** Google Gemini / Claude / GPT
+- **Database:** SQLite + SQLAlchemy
+- **Deployment:** Docker + HuggingFace Spaces
+- **Languages:** Python 3.10+
 
-```bash
-pip install -r requirements.txt
-```
+## 🚀 Quick Start
 
-## Run Locally
+1. Visit the [live demo](https://yashjanthb-resume-ats-builder.hf.space)
+2. Get a FREE Gemini API key at [aistudio.google.com](https://aistudio.google.com/apikey)
+3. Paste your resume (or upload PDF/DOCX)
+4. Paste the job description
+5. Click "Calculate ATS Score" or use AI features
 
-```bash
-streamlit run dashboard.py
-```
+## 👤 Author
 
-## Deploy to HF Spaces
-
-1. Push to GitHub
-2. Create HF Space (Docker SDK)
-3. Set ANTHROPIC_API_KEY secret
-4. Done!
-
-## Tech Stack
-
-- Streamlit
-- Claude AI
-- SQLite
-- Docker
-
-Built with ❤️ using Streamlit + Claude AI
+**Yashwanth Balusu**
+- LinkedIn: [yashwanth-Balusu](https://linkedin.com/in/yashwanth-Balusu)
+- GitHub: [@yashwanthbalusu6-scode](https://github.com/yashwanthbalusu6-scode)
+- Email: yashwanthbalusu@outlook.com
