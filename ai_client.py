@@ -1,5 +1,25 @@
 """Unified AI client: routes to YepAPI, Anthropic, or OpenAI based on key prefix."""
-from typing import Any, Dict, Optional
+import os
+from typing import Any, Dict, List, Optional
+
+# YepAPI model fallback chain. The first that succeeds is used.
+# Override with YEP_MODELS env var (comma-separated).
+DEFAULT_YEP_MODELS: List[str] = [
+    "anthropic/claude-haiku",
+    "anthropic/claude-haiku-4.5",
+    "anthropic/claude-sonnet-4",
+    "anthropic/claude-sonnet-4.5",
+    "openai/gpt-4o-mini",
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.5-flash",
+]
+
+
+def _yep_models() -> List[str]:
+    env = os.getenv("YEP_MODELS", "").strip()
+    if env:
+        return [m.strip() for m in env.split(",") if m.strip()]
+    return DEFAULT_YEP_MODELS
 
 
 def call_ai(
@@ -25,15 +45,31 @@ def call_ai(
                 api_key=key,
                 default_headers={"x-api-key": key},
             )
-            response = client.chat.completions.create(
-                model="anthropic/claude-haiku-4",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-            )
-            return {
-                "text": response.choices[0].message.content,
-                "provider": "YepAPI (claude-haiku-4)",
-            }
+            last_err: Optional[str] = None
+            for model_id in _yep_models():
+                try:
+                    response = client.chat.completions.create(
+                        model=model_id,
+                        messages=[{"role": "user", "content": prompt}],
+                        max_tokens=max_tokens,
+                    )
+                    return {
+                        "text": response.choices[0].message.content,
+                        "provider": f"YepAPI ({model_id})",
+                    }
+                except Exception as model_err:
+                    msg = str(model_err)
+                    last_err = f"{model_id}: {msg}"
+                    # Only retry next model when the failure is model-related
+                    is_model_issue = (
+                        "is not available" in msg
+                        or "model" in msg.lower() and "not" in msg.lower()
+                        or "404" in msg
+                        or "400" in msg
+                    )
+                    if not is_model_issue:
+                        return {"error": f"YepAPI error: {msg}"}
+            return {"error": f"YepAPI: no model in fallback chain succeeded. Last: {last_err}"}
         except Exception as e:
             return {"error": f"YepAPI error: {str(e)}"}
 
