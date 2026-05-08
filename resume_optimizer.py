@@ -1,19 +1,25 @@
-"""Resume optimizer using Claude API"""
-import os
-from anthropic import Anthropic
+"""Resume optimizer using Claude via YepAPI or Anthropic."""
+from typing import Any, Dict, Optional
 
-client = Anthropic()
+from ai_client import call_ai
 
 
 class ResumeOptimizer:
     """Optimize resume using Claude."""
-    
-    def __init__(self, resume: str, job: str):
+
+    def __init__(
+        self,
+        resume: str,
+        job: str,
+        yep_api_key: Optional[str] = None,
+        anthropic_api_key: Optional[str] = None,
+    ):
         self.resume = resume
         self.job = job
-    
-    def optimize(self) -> dict:
-        """Generate optimized resume."""
+        self.yep_api_key = yep_api_key
+        self.anthropic_api_key = anthropic_api_key
+
+    def optimize(self) -> Dict[str, Any]:
         prompt = f"""Optimize this resume for this job.
 
 RESUME:
@@ -22,14 +28,19 @@ RESUME:
 JOB:
 {self.job}
 
-Return optimized resume and changes made."""
-        
+Return:
+1. The optimized resume text
+2. A bulleted list of changes you made and why
+"""
         try:
-            message = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
+            result = call_ai(
+                prompt,
+                yep_api_key=self.yep_api_key,
+                anthropic_api_key=self.anthropic_api_key,
+                max_tokens=2500,
             )
-            return {'optimized': message.content[0].text}
+            if "error" in result:
+                return {"error": result["error"]}
+            return {"optimized": result["text"], "provider": result.get("provider")}
         except Exception as e:
-            return {'error': str(e)}
+            return {"error": str(e)}

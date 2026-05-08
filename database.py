@@ -1,7 +1,9 @@
-"""SQLite database models"""
+"""SQLite database models."""
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, Text
+from typing import Any
+
+from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -14,7 +16,7 @@ Base = declarative_base()
 class ApplicationRecord(Base):
     """Track job applications."""
     __tablename__ = "applications"
-    
+
     id = Column(Integer, primary_key=True)
     job_title = Column(String(200))
     company = Column(String(200))
@@ -25,9 +27,12 @@ class ApplicationRecord(Base):
     notes = Column(Text, default="")
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+def init_db() -> None:
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass
 
 
-def get_session():
+def get_session() -> Any:
     return SessionLocal()
