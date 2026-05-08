@@ -15,6 +15,7 @@ from ai_client import detect_provider, has_any_key
 from ats_scorer import ATSScorer
 from cover_letter_generator import CoverLetterGenerator
 from database import ApplicationRecord, get_session, init_db
+from error_handler import handle_error
 from interview_prep import InterviewPrepGenerator
 from job_parser import JobParser
 from resume_optimizer import ResumeOptimizer
@@ -71,18 +72,15 @@ st.markdown("""
 
 # ── Session State Initialization ──────────────────────────────────────────────
 def init_session_state():
-    defaults = {
-        "resume_text": "",
-        "job_desc": "",
-        "api_key": "",
-        "ats_result": None,
-        "optimized_result": None,
-        "cover_letter_result": None,
-        "interview_result": None,
-    }
-    for key, val in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = val
+    st.session_state.setdefault("resume_text", "")
+    st.session_state.setdefault("job_desc", "")
+    st.session_state.setdefault("api_key", "")
+    st.session_state.setdefault("ats_result", None)
+    st.session_state.setdefault("optimized_result", None)
+    st.session_state.setdefault("cover_letter_result", None)
+    st.session_state.setdefault("interview_result", None)
+    st.session_state.setdefault("yep_api_key", "")
+    st.session_state.setdefault("anthropic_api_key", "")
 
 init_session_state()
 
@@ -230,7 +228,9 @@ with tab1:
                     except Exception:
                         pass
             except Exception as e:
-                st.error(f"Upload failed: {e}")
+                err = handle_error(e, "Resume Upload")
+                st.error(err["error"])
+                st.info(f"💡 {err['suggestion']}")
 
         if st.button("📋 Use Sample Resume", key="sample_res"):
             if "resume_text" in st.session_state:
@@ -278,27 +278,31 @@ with tab1:
             use_container_width=True,
             type="primary"
         ):
-            with st.spinner("Analyzing keywords and formatting..."):
-                scorer = ATSScorer(st.session_state.resume_text, st.session_state.job_desc)
-                st.session_state.ats_result = scorer.score()
-                st.toast("Analysis Complete!", icon="✅")
-        if not has_inputs:
-            st.caption("⚠️ Provide both resume and job description to analyze.")
+            try:
+                with st.spinner("Analyzing keywords and formatting..."):
+                    scorer = ATSScorer(st.session_state.resume_text, st.session_state.job_desc)
+                    st.session_state.ats_result = scorer.score()
+                    st.toast("Analysis Complete!", icon="✅")
+            except Exception as e:
+                st.session_state.ats_result = handle_error(e, "ATS Scoring")
 
     with btn_col2:
         if st.button("🤖 AI Optimize Resume", use_container_width=True, disabled=not (has_inputs and has_key)):
-            with st.spinner("AI is rewriting your resume for maximum impact..."):
-                opt = ResumeOptimizer(st.session_state.resume_text, st.session_state.job_desc, **_ai_keys())
-                st.session_state.optimized_result = opt.optimize()
-                st.toast("Resume Optimized!", icon="✨")
-        if has_inputs and not has_key:
-            st.caption("🔑 Add an API key in the sidebar to unlock AI optimization.")
+            try:
+                with st.spinner("AI is rewriting your resume for maximum impact..."):
+                    opt = ResumeOptimizer(st.session_state.resume_text, st.session_state.job_desc, **_ai_keys())
+                    st.session_state.optimized_result = opt.optimize()
+                    st.toast("Resume Optimized!", icon="✨")
+            except Exception as e:
+                st.session_state.optimized_result = handle_error(e, "AI Optimization")
 
     # Results Display
     if st.session_state.ats_result:
         res = st.session_state.ats_result
         if res.get("error"):
             st.error(res["error"])
+            if res.get("suggestion"):
+                st.info(f"💡 {res['suggestion']}")
         else:
             st.markdown("### 📊 ATS Analysis Results")
             score = res["overall"]
@@ -317,6 +321,8 @@ with tab1:
         opt = st.session_state.optimized_result
         if opt.get("error"):
             st.error(opt["error"])
+            if opt.get("suggestion"):
+                st.info(f"💡 {opt['suggestion']}")
         else:
             st.markdown("---")
             st.markdown("### ✨ AI Optimized Content")
@@ -341,15 +347,20 @@ with tab2:
         cl_tone = st.selectbox("Tone", ["Formal", "Enthusiastic", "Professional", "Creative"])
     
     if st.button("✨ Generate My Cover Letter", use_container_width=True, type="primary", disabled=not (has_inputs and has_key)):
-        with st.spinner("Writing a winning cover letter..."):
-            gen = CoverLetterGenerator(st.session_state.resume_text, st.session_state.job_desc, cl_company, cl_role, **_ai_keys())
-            st.session_state.cover_letter_result = gen.generate(tone=cl_tone.lower())
-            st.toast("Generated!", icon="💌")
+        try:
+            with st.spinner("Writing a winning cover letter..."):
+                gen = CoverLetterGenerator(st.session_state.resume_text, st.session_state.job_desc, cl_company, cl_role, **_ai_keys())
+                st.session_state.cover_letter_result = gen.generate(tone=cl_tone.lower())
+                st.toast("Generated!", icon="💌")
+        except Exception as e:
+            st.session_state.cover_letter_result = handle_error(e, "Cover Letter Generation")
 
     if st.session_state.cover_letter_result:
         res = st.session_state.cover_letter_result
         if res.get("error"):
             st.error(res["error"])
+            if res.get("suggestion"):
+                st.info(f"💡 {res['suggestion']}")
         else:
             st.markdown(res["letter"])
             st.download_button("⬇️ Download Cover Letter", res["letter"], "cover_letter.md", use_container_width=True)
@@ -360,15 +371,20 @@ with tab3:
     st.info("AI will generate questions based on your resume and the job description.")
     
     if st.button("🎯 Generate Interview Guide", use_container_width=True, type="primary", disabled=not (has_inputs and has_key)):
-        with st.spinner("Preparing interview questions and STAR-format answers..."):
-            prep = InterviewPrepGenerator(st.session_state.resume_text, st.session_state.job_desc, "Company", "Role", **_ai_keys())
-            st.session_state.interview_result = prep.generate()
-            st.toast("Guide Ready!", icon="🎯")
+        try:
+            with st.spinner("Preparing interview questions and STAR-format answers..."):
+                prep = InterviewPrepGenerator(st.session_state.resume_text, st.session_state.job_desc, "Company", "Role", **_ai_keys())
+                st.session_state.interview_result = prep.generate()
+                st.toast("Guide Ready!", icon="🎯")
+        except Exception as e:
+            st.session_state.interview_result = handle_error(e, "Interview Prep Generation")
 
     if st.session_state.interview_result:
         res = st.session_state.interview_result
         if res.get("error"):
             st.error(res["error"])
+            if res.get("suggestion"):
+                st.info(f"💡 {res['suggestion']}")
         else:
             st.markdown(res["questions"])
             st.download_button("⬇️ Download Interview Prep Guide", res["questions"], "interview_prep.md", use_container_width=True)

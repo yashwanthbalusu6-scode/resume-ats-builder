@@ -14,13 +14,16 @@ def call_ai(prompt, yep_api_key=None, anthropic_api_key=None, max_tokens=2000):
             genai.configure(api_key=other_key)
             
             # Try models in order of preference
-            models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash-exp', 'gemini-flash-latest']
+            models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
             last_error = None
             for model_name in models_to_try:
                 try:
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(prompt)
-                    return {"text": response.text, "provider": f"🎯 Google Gemini ({model_name})"}
+                    if response and hasattr(response, 'text') and response.text:
+                        return {"text": response.text, "provider": f"🎯 Google Gemini ({model_name})"}
+                    else:
+                        last_error = "Empty response from Gemini"
                 except Exception as e:
                     last_error = e
                     continue
