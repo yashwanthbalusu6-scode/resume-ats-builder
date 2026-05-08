@@ -1,3 +1,14 @@
+---
+title: ATS Resume Platform
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+sdk_version: "20.10"
+app_file: dashboard.py
+pinned: false
+---
+
 # 🚀 ATS Resume & Job Application Platform
 
 Advanced AI-powered resume optimizer for job applications.
