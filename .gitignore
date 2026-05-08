@@ -18,3 +18,5 @@ resume_tracker.db
 *.pdf
 *.docx
 sample_*.pdf
+.claude/
+

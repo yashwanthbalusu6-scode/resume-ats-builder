@@ -12,9 +12,19 @@ def call_ai(prompt, yep_api_key=None, anthropic_api_key=None, max_tokens=2000):
         try:
             import google.generativeai as genai
             genai.configure(api_key=other_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(prompt)
-            return {"text": response.text, "provider": "🎯 Google Gemini (FREE)"}
+            
+            # Try models in order of preference
+            models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash-exp', 'gemini-flash-latest']
+            last_error = None
+            for model_name in models_to_try:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(prompt)
+                    return {"text": response.text, "provider": f"🎯 Google Gemini ({model_name})"}
+                except Exception as e:
+                    last_error = e
+                    continue
+            return {"error": f"All Gemini models failed: {last_error}"}
         except Exception as e:
             return {"error": f"Gemini error: {str(e)}"}
     

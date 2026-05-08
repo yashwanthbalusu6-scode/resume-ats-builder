@@ -210,28 +210,23 @@ with tab1:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                     tmp.write(uploaded.getvalue())
                     tmp_path = tmp.name
-                
                 try:
                     parser = ResumeParser(tmp_path)
                     parsed = parser.parse()
-                    
                     if parsed.get("error"):
                         st.error(f"❌ {parsed['error']}")
-                    elif not parsed.get("full_text", "").strip():
-                        st.warning("⚠️ File uploaded but no text found. Try pasting manually.")
-                    else:
-                        extracted = parsed["full_text"]
-                        st.session_state.resume_text = extracted
-                        st.success(f"✅ Extracted {len(extracted)} characters")
-                        with st.expander("📄 Preview extracted text"):
-                            st.text(extracted[:500] + ("..." if len(extracted) > 500 else ""))
+                    elif parsed.get("full_text", "").strip():
+                        if st.session_state.resume_text != parsed["full_text"]:
+                            st.session_state.resume_text = parsed["full_text"]
+                            st.success(f"✅ Extracted {len(parsed['full_text'])} chars")
+                            st.rerun()
                 finally:
                     try:
                         os.unlink(tmp_path)
                     except Exception:
                         pass
             except Exception as e:
-                st.error(f"❌ Upload failed: {e}")
+                st.error(f"Upload failed: {e}")
 
         if st.button("📋 Use Sample Resume", key="sample_res"):
             st.session_state.resume_text = SAMPLE_RESUME
@@ -263,27 +258,34 @@ with tab1:
 
     st.markdown("---")
     
-    can_analyze = bool(st.session_state.resume_text.strip() and st.session_state.job_desc.strip())
+    resume_ready = bool(st.session_state.get("resume_text", "").strip())
+    job_ready = bool(st.session_state.get("job_desc", "").strip())
+    has_inputs = resume_ready and job_ready
     has_key = bool(st.session_state.api_key.strip())
     
     btn_col1, btn_col2 = st.columns(2)
     
     with btn_col1:
-        if st.button("📊 Calculate ATS Score", use_container_width=True, type="primary", disabled=not can_analyze):
+        if st.button(
+            "📊 Calculate ATS Score (FREE)",
+            disabled=not has_inputs,
+            use_container_width=True,
+            type="primary"
+        ):
             with st.spinner("Analyzing keywords and formatting..."):
                 scorer = ATSScorer(st.session_state.resume_text, st.session_state.job_desc)
                 st.session_state.ats_result = scorer.score()
                 st.toast("Analysis Complete!", icon="✅")
-        if not can_analyze:
+        if not has_inputs:
             st.caption("⚠️ Provide both resume and job description to analyze.")
 
     with btn_col2:
-        if st.button("🤖 AI Optimize Resume", use_container_width=True, disabled=not (can_analyze and has_key)):
+        if st.button("🤖 AI Optimize Resume", use_container_width=True, disabled=not (has_inputs and has_key)):
             with st.spinner("AI is rewriting your resume for maximum impact..."):
                 opt = ResumeOptimizer(st.session_state.resume_text, st.session_state.job_desc, **_ai_keys())
                 st.session_state.optimized_result = opt.optimize()
                 st.toast("Resume Optimized!", icon="✨")
-        if can_analyze and not has_key:
+        if has_inputs and not has_key:
             st.caption("🔑 Add an API key in the sidebar to unlock AI optimization.")
 
     # Results Display
@@ -332,7 +334,7 @@ with tab2:
     with c2:
         cl_tone = st.selectbox("Tone", ["Formal", "Enthusiastic", "Professional", "Creative"])
     
-    if st.button("✨ Generate My Cover Letter", use_container_width=True, type="primary", disabled=not (can_analyze and has_key)):
+    if st.button("✨ Generate My Cover Letter", use_container_width=True, type="primary", disabled=not (has_inputs and has_key)):
         with st.spinner("Writing a winning cover letter..."):
             gen = CoverLetterGenerator(st.session_state.resume_text, st.session_state.job_desc, cl_company, cl_role, **_ai_keys())
             st.session_state.cover_letter_result = gen.generate(tone=cl_tone.lower())
@@ -351,7 +353,7 @@ with tab3:
     st.subheader("🎤 Interview Preparation")
     st.info("AI will generate questions based on your resume and the job description.")
     
-    if st.button("🎯 Generate Interview Guide", use_container_width=True, type="primary", disabled=not (can_analyze and has_key)):
+    if st.button("🎯 Generate Interview Guide", use_container_width=True, type="primary", disabled=not (has_inputs and has_key)):
         with st.spinner("Preparing interview questions and STAR-format answers..."):
             prep = InterviewPrepGenerator(st.session_state.resume_text, st.session_state.job_desc, "Company", "Role", **_ai_keys())
             st.session_state.interview_result = prep.generate()
