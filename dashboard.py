@@ -169,6 +169,8 @@ with st.sidebar:
 
     if st.button("🧹 Clear All Data", use_container_width=True, type="secondary"):
         for key in ["resume_text", "job_desc", "ats_result", "optimized_result", "cover_letter_result", "interview_result"]:
+            if key in st.session_state:
+                del st.session_state[key]
             st.session_state[key] = "" if "text" in key or "desc" in key else None
         st.rerun()
 
@@ -216,10 +218,12 @@ with tab1:
                     if parsed.get("error"):
                         st.error(f"❌ {parsed['error']}")
                     elif parsed.get("full_text", "").strip():
-                        if st.session_state.resume_text != parsed["full_text"]:
-                            st.session_state.resume_text = parsed["full_text"]
-                            st.success(f"✅ Extracted {len(parsed['full_text'])} chars")
-                            st.rerun()
+                        extracted = parsed["full_text"]
+                        if "resume_text" in st.session_state:
+                            del st.session_state["resume_text"]
+                        st.session_state["resume_text"] = extracted
+                        st.success(f"✅ Extracted {len(extracted)} chars from {uploaded.name}")
+                        st.rerun()
                 finally:
                     try:
                         os.unlink(tmp_path)
@@ -229,32 +233,34 @@ with tab1:
                 st.error(f"Upload failed: {e}")
 
         if st.button("📋 Use Sample Resume", key="sample_res"):
+            if "resume_text" in st.session_state:
+                del st.session_state["resume_text"]
             st.session_state.resume_text = SAMPLE_RESUME
             st.rerun()
 
-        resume_input = st.text_area(
+        st.text_area(
             "Or Paste Resume Text",
-            value=st.session_state.resume_text,
             height=300,
-            key="res_area"
+            key="resume_text",
+            placeholder="Resume content will appear here after upload, or paste manually...",
         )
-        st.session_state.resume_text = resume_input
-        st.caption(f"Characters: {len(resume_input)}")
+        st.caption(f"Characters: {len(st.session_state.get('resume_text', ''))}")
 
     with col2:
         st.subheader("💼 Job Description")
         if st.button("📋 Use Sample Job", key="sample_job"):
+            if "job_desc" in st.session_state:
+                del st.session_state["job_desc"]
             st.session_state.job_desc = SAMPLE_JOB
             st.rerun()
             
-        job_input = st.text_area(
+        st.text_area(
             "Paste Job Description Here",
-            value=st.session_state.job_desc,
             height=390,
-            key="job_area"
+            key="job_desc",
+            placeholder="Paste the full job posting...",
         )
-        st.session_state.job_desc = job_input
-        st.caption(f"Characters: {len(job_input)}")
+        st.caption(f"Characters: {len(st.session_state.get('job_desc', ''))}")
 
     st.markdown("---")
     
