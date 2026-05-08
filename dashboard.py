@@ -175,9 +175,9 @@ with tab1:
 
     with col_a:
         uploaded = st.file_uploader(
-            "Upload resume (PDF or DOCX)",
-            type=["pdf", "docx"],
-            help="Supported: PDF, DOCX",
+            "Upload resume (PDF, DOCX, DOC, TXT, RTF, MD)",
+            type=["pdf", "docx", "doc", "txt", "rtf", "md"],
+            help="Any common resume format. Text is auto-extracted.",
         )
         if uploaded is not None:
             try:
@@ -189,11 +189,21 @@ with tab1:
                     parsed = ResumeParser(tmp_path).parse()
                     if parsed.get("error"):
                         st.error(f"Parse error: {parsed['error']}")
+                        for w in parsed.get("warnings") or []:
+                            st.warning(w)
                     elif parsed.get("full_text"):
                         st.session_state.resume_text = parsed["full_text"]
+                        method = parsed.get("method") or "auto"
                         st.success(
                             f"✅ Parsed {uploaded.name} "
-                            f"({len(parsed['full_text'])} chars)"
+                            f"({len(parsed['full_text'])} chars · via {method})"
+                        )
+                        for w in parsed.get("warnings") or []:
+                            st.warning(w)
+                    else:
+                        st.error(
+                            "Could not extract text. "
+                            "If this is a scanned PDF, paste the resume below instead."
                         )
                 finally:
                     try:
